@@ -5,7 +5,8 @@ This is not a release version, it is far from done or being a viable product. Th
 # Squigglers: Re-implementation of squigglepy in rust
 
 [Squigglepy](https://github.com/rethinkpriorities/squigglepy)
+
 [Squiggle](https://www.squiggle-language.com/)
 
 ## Acknowledgements
-- Thanks to @agucova for all the help porting Squigglepy to rust
+- Thanks to [@agucova] (https://www.github.com/agucova) for all the help porting Squigglepy to rust
