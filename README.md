@@ -2,7 +2,7 @@
 
 This is not a release version, it is far from done or being a viable product. This is just a Proof of Concept (POC) at the moment.
 
-# Squigglers: Re-adaptation on squigglepy in rust
+# Squigglers: Re-implementation of squigglepy in rust
 
 [Squigglepy](https://github.com/rethinkpriorities/squigglepy)
 [Squiggle](https://www.squiggle-language.com/)
