@@ -9,4 +9,4 @@ This is not a release version, it is far from done or being a viable product. Th
 [Squiggle](https://www.squiggle-language.com/)
 
 ## Acknowledgements
-- Thanks to [@agucova] (https://www.github.com/agucova) for all the help porting Squigglepy to rust
+- Thanks to [@agucova](https://www.github.com/agucova) for all the help porting Squigglepy to rust
