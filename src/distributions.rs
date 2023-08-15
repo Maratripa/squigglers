@@ -14,7 +14,7 @@ pub struct Constant {
 }
 
 impl Constant {
-    fn new(number: f64) -> Self {
+    pub fn new(number: f64) -> Self {
         Self { number }
     }
 
