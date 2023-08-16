@@ -6,7 +6,7 @@ use statrs::{
     distribution::{LogNormal, Normal, Poisson, Triangular, Uniform},
     statistics::Distribution,
 };
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, PartialEq)]
 pub struct Constant {
@@ -48,6 +48,7 @@ pub enum Ops {
     Add(Box<DistNode>, Box<DistNode>),
     Mul(Box<DistNode>, Box<DistNode>),
     Sub(Box<DistNode>, Box<DistNode>),
+    Div(Box<DistNode>, Box<DistNode>),
 }
 
 #[derive(PartialEq, Debug)]
@@ -64,6 +65,7 @@ impl DistNode {
                 Ops::Add(d1, d2) => d1.sample() + d2.sample(),
                 Ops::Mul(d1, d2) => d1.sample() * d2.sample(),
                 Ops::Sub(d1, d2) => d1.sample() - d2.sample(),
+                Ops::Div(d1, d2) => d1.sample() / d2.sample(),
             },
             Self::Continuous(dist) => dist.sample(&mut thread_rng()),
             Self::Discrete(dist) => dist.sample(&mut thread_rng()),
@@ -76,6 +78,7 @@ impl DistNode {
                 Ops::Add(d1, d2) => d1.nsample(n) + d2.nsample(n),
                 Ops::Mul(d1, d2) => d1.nsample(n) * d2.nsample(n),
                 Ops::Sub(d1, d2) => d1.nsample(n) - d2.nsample(n),
+                Ops::Div(d1, d2) => d1.nsample(n) / d2.nsample(n),
             },
             Self::Continuous(dist) => dist.sample_iter(&mut thread_rng()).take(n).collect(),
             Self::Discrete(dist) => dist.sample_iter(&mut thread_rng()).take(n).collect(),
@@ -120,9 +123,52 @@ impl Mul for DistNode {
     }
 }
 
+impl Mul<f64> for DistNode {
+    type Output = Self;
+    fn mul(self, rhs: f64) -> Self {
+        Self::Operation(Ops::Mul(
+            Box::new(self),
+            Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                dist: Constant { number: rhs },
+            })),
+        ))
+    }
+}
+
 impl Sub for DistNode {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
         Self::Operation(Ops::Sub(Box::new(self), Box::new(rhs)))
+    }
+}
+
+impl Div for DistNode {
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self::Output {
+        Self::Operation(Ops::Div(Box::new(self), Box::new(rhs)))
+    }
+}
+
+impl Div<f64> for DistNode {
+    type Output = Self;
+    fn div(self, rhs: f64) -> Self {
+        Self::Operation(Ops::Div(
+            Box::new(self),
+            Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                dist: Constant { number: rhs },
+            })),
+        ))
+    }
+}
+
+impl Div<DistNode> for f64 {
+    type Output = DistNode;
+    fn div(self, rhs: DistNode) -> DistNode {
+        DistNode::Operation(Ops::Div(
+            Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                dist: Constant { number: self },
+            })),
+            Box::new(rhs),
+        ))
     }
 }
