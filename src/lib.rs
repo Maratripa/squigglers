@@ -1,5 +1,7 @@
 mod distributions;
+pub mod functions;
 pub mod interface;
+mod utils;
 
 #[cfg(test)]
 mod tests {
