@@ -117,6 +117,30 @@ impl Add for DistNode {
     }
 }
 
+impl Add<f64> for DistNode {
+    type Output = Self;
+    fn add(self, rhs: f64) -> Self {
+        match &self {
+            Self::Continuous(ContinuousDist::Normal { dist }) => {
+                Self::Continuous(ContinuousDist::Normal {
+                    dist: Normal::new(dist.mean().unwrap() + rhs, dist.std_dev().unwrap()).unwrap(),
+                })
+            }
+            Self::Discrete(DiscreteDist::Constant { dist }) => {
+                Self::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(dist.number() + rhs),
+                })
+            }
+            _ => Self::Operation(Ops::Add(
+                Box::new(self),
+                Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(rhs),
+                })),
+            )),
+        }
+    }
+}
+
 impl Mul for DistNode {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
@@ -157,12 +181,40 @@ impl Mul for DistNode {
 impl Mul<f64> for DistNode {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self {
-        Self::Operation(Ops::Mul(
-            Box::new(self),
-            Box::new(DistNode::Discrete(DiscreteDist::Constant {
-                dist: Constant { number: rhs },
-            })),
-        ))
+        if rhs == 0.0 {
+            return Self::Discrete(DiscreteDist::Constant {
+                dist: Constant::new(0.0),
+            });
+        }
+        match &self {
+            Self::Continuous(ContinuousDist::Normal { dist }) => {
+                Self::Continuous(ContinuousDist::Normal {
+                    dist: Normal::new(
+                        dist.mean().unwrap() * rhs,
+                        dist.std_dev().unwrap() * rhs.abs(),
+                    )
+                    .unwrap(),
+                })
+            }
+            Self::Continuous(ContinuousDist::LogNormal { dist }) => {
+                let loc = dist.median().ln();
+                let scale = 2. * dist.mean().unwrap().ln() - loc;
+                Self::Continuous(ContinuousDist::LogNormal {
+                    dist: LogNormal::new(loc + rhs.abs().ln(), scale).unwrap(),
+                })
+            }
+            Self::Discrete(DiscreteDist::Constant { dist }) => {
+                Self::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(dist.number() * rhs),
+                })
+            }
+            _ => Self::Operation(Ops::Mul(
+                Box::new(self),
+                Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant { number: rhs },
+                })),
+            )),
+        }
     }
 }
 
@@ -191,6 +243,55 @@ impl Sub for DistNode {
                 (_, _) => DistNode::Operation(Ops::Sub(Box::new(self), Box::new(rhs))),
             },
             (_, _) => DistNode::Operation(Ops::Sub(Box::new(self), Box::new(rhs))),
+        }
+    }
+}
+
+impl Sub<f64> for DistNode {
+    type Output = Self;
+    fn sub(self, rhs: f64) -> Self {
+        match &self {
+            Self::Continuous(ContinuousDist::Normal { dist }) => {
+                Self::Continuous(ContinuousDist::Normal {
+                    dist: Normal::new(dist.mean().unwrap() - rhs, dist.std_dev().unwrap()).unwrap(),
+                })
+            }
+            Self::Discrete(DiscreteDist::Constant { dist }) => {
+                Self::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(dist.number() - rhs),
+                })
+            }
+            _ => Self::Operation(Ops::Sub(
+                Box::new(self),
+                Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(rhs),
+                })),
+            )),
+        }
+    }
+}
+
+impl Sub<DistNode> for f64 {
+    type Output = DistNode;
+    fn sub(self, rhs: DistNode) -> DistNode {
+        match &rhs {
+            DistNode::Continuous(ContinuousDist::Normal { dist }) => {
+                DistNode::Continuous(ContinuousDist::Normal {
+                    dist: Normal::new(self - dist.mean().unwrap(), dist.std_dev().unwrap())
+                        .unwrap(),
+                })
+            }
+            DistNode::Discrete(DiscreteDist::Constant { dist }) => {
+                DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(self - dist.number()),
+                })
+            }
+            _ => DistNode::Operation(Ops::Sub(
+                Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(self),
+                })),
+                Box::new(rhs),
+            )),
         }
     }
 }
@@ -235,23 +336,76 @@ impl Div for DistNode {
 impl Div<f64> for DistNode {
     type Output = Self;
     fn div(self, rhs: f64) -> Self {
-        Self::Operation(Ops::Div(
-            Box::new(self),
-            Box::new(DistNode::Discrete(DiscreteDist::Constant {
-                dist: Constant { number: rhs },
-            })),
-        ))
+        if rhs == 0.0 {
+            return Self::Discrete(DiscreteDist::Constant {
+                dist: Constant::new(0.0),
+            });
+        }
+        match &self {
+            Self::Continuous(ContinuousDist::Normal { dist }) => {
+                Self::Continuous(ContinuousDist::Normal {
+                    dist: Normal::new(
+                        dist.mean().unwrap() / rhs,
+                        dist.std_dev().unwrap() / rhs.abs(),
+                    )
+                    .unwrap(),
+                })
+            }
+            Self::Continuous(ContinuousDist::LogNormal { dist }) => {
+                let loc = dist.median().ln();
+                let scale = 2. * dist.mean().unwrap().ln() - loc;
+                Self::Continuous(ContinuousDist::LogNormal {
+                    dist: LogNormal::new(loc - rhs.abs().ln(), scale).unwrap(),
+                })
+            }
+            Self::Discrete(DiscreteDist::Constant { dist }) => {
+                Self::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(dist.number() / rhs),
+                })
+            }
+            _ => Self::Operation(Ops::Div(
+                Box::new(self),
+                Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant { number: rhs },
+                })),
+            )),
+        }
     }
 }
 
 impl Div<DistNode> for f64 {
     type Output = DistNode;
     fn div(self, rhs: DistNode) -> DistNode {
-        DistNode::Operation(Ops::Div(
-            Box::new(DistNode::Discrete(DiscreteDist::Constant {
-                dist: Constant { number: self },
-            })),
-            Box::new(rhs),
-        ))
+        if self == 0.0 {
+            return DistNode::Discrete(DiscreteDist::Constant {
+                dist: Constant::new(0.0),
+            });
+        }
+        match &rhs {
+            DistNode::Continuous(ContinuousDist::LogNormal { dist }) => {
+                let loc = dist.median().ln();
+                let scale = 2. * dist.mean().unwrap().ln() - loc;
+                DistNode::Continuous(ContinuousDist::LogNormal {
+                    dist: LogNormal::new(self.abs().ln() - loc, scale).unwrap(),
+                })
+            }
+            DistNode::Discrete(DiscreteDist::Constant { dist }) => {
+                let const_num: f64 = if dist.number() == 0.0 {
+                    0.0
+                } else {
+                    self / dist.number()
+                };
+
+                DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant::new(const_num),
+                })
+            }
+            _ => DistNode::Operation(Ops::Div(
+                Box::new(DistNode::Discrete(DiscreteDist::Constant {
+                    dist: Constant { number: self },
+                })),
+                Box::new(rhs),
+            )),
+        }
     }
 }
