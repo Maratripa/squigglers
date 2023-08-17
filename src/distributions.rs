@@ -141,6 +141,14 @@ impl Mul for DistNode {
                 }
                 (_, _) => Self::Operation(Ops::Mul(Box::new(self), Box::new(rhs))),
             },
+            (Self::Discrete(d1), Self::Discrete(d2)) => match (d1, d2) {
+                (DiscreteDist::Constant { dist: d3 }, DiscreteDist::Constant { dist: d4 }) => {
+                    Self::Discrete(DiscreteDist::Constant {
+                        dist: Constant::new(d3.number() * d4.number()),
+                    })
+                }
+                (_, _) => Self::Operation(Ops::Mul(Box::new(self), Box::new(rhs))),
+            },
             (_, _) => Self::Operation(Ops::Mul(Box::new(self), Box::new(rhs))),
         }
     }
@@ -207,6 +215,14 @@ impl Div for DistNode {
 
                     Self::Continuous(ContinuousDist::LogNormal {
                         dist: LogNormal::new(location, scale).unwrap(),
+                    })
+                }
+                (_, _) => Self::Operation(Ops::Div(Box::new(self), Box::new(rhs))),
+            },
+            (Self::Discrete(d1), Self::Discrete(d2)) => match (d1, d2) {
+                (DiscreteDist::Constant { dist: d3 }, DiscreteDist::Constant { dist: d4 }) => {
+                    Self::Discrete(DiscreteDist::Constant {
+                        dist: Constant::new(d3.number() / d4.number()),
                     })
                 }
                 (_, _) => Self::Operation(Ops::Div(Box::new(self), Box::new(rhs))),
