@@ -25,6 +25,35 @@ impl Dst<f64> for Constant {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Discrete {
+    values: Box<[f64]>,
+    weights: Box<[f64]>,
+}
+
+impl Discrete {
+    pub fn new(values: Vec<f64>, weights: Vec<f64>) -> Self {
+        Self {
+            values: values.into_boxed_slice(),
+            weights: weights.into_boxed_slice(),
+        }
+    }
+
+    pub fn values(&self) -> &[f64] {
+        &self.values
+    }
+
+    pub fn weights(&self) -> &[f64] {
+        &self.weights
+    }
+}
+
+impl Dst<f64> for Discrete {
+    fn sample<R: rand::Rng + ?Sized>(&self, _rng: &mut R) -> f64 {
+        todo!()
+    }
+}
+
 #[derive(DistributionDerive, PartialEq, Debug)]
 pub enum ContinuousDist {
     LogNormal { dist: LogNormal },
@@ -37,6 +66,7 @@ pub enum ContinuousDist {
 pub enum DiscreteDist {
     Constant { dist: Constant },
     Poisson { dist: Poisson },
+    Discrete { dist: Discrete },
 }
 
 #[derive(PartialEq, Debug)]
