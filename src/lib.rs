@@ -1,6 +1,7 @@
 mod distributions;
 pub mod functions;
 pub mod interface;
+mod operations;
 mod utils;
 
 #[cfg(test)]
