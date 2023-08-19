@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use dist_derive::DistributionDerive;
 use ndarray::{Array, Dim};
 use rand::thread_rng;
@@ -62,11 +64,32 @@ pub enum ContinuousDist {
     Uniform { dist: Uniform },
 }
 
+impl Display for ContinuousDist {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::LogNormal { dist } => write!(f, "Log-Normal"),
+            Self::Normal { dist } => write!(f, "Normal"),
+            Self::Triangular { dist } => write!(f, "Triangular"),
+            Self::Uniform { dist } => write!(f, "Uniform"),
+        }
+    }
+}
+
 #[derive(DistributionDerive, PartialEq, Debug)]
 pub enum DiscreteDist {
     Constant { dist: Constant },
     Poisson { dist: Poisson },
     Discrete { dist: Discrete },
+}
+
+impl Display for DiscreteDist {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::Constant { dist } => write!(f, "Constant"),
+            Self::Poisson { dist } => write!(f, "Poisson"),
+            Self::Discrete { dist } => write!(f, "Discrete"),
+        }
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -75,6 +98,17 @@ pub enum Ops {
     Mul(Box<DistNode>, Box<DistNode>),
     Sub(Box<DistNode>, Box<DistNode>),
     Div(Box<DistNode>, Box<DistNode>),
+}
+
+impl Display for Ops {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::Add(d1, d2) => write!(f, "({} + {})", d1, d2),
+            Self::Mul(d1, d2) => write!(f, "({} * {})", d1, d2),
+            Self::Sub(d1, d2) => write!(f, "({} - {})", d1, d2),
+            Self::Div(d1, d2) => write!(f, "({} / {})", d1, d2),
+        }
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -108,6 +142,16 @@ impl DistNode {
             },
             Self::Continuous(dist) => dist.sample_iter(&mut thread_rng()).take(n).collect(),
             Self::Discrete(dist) => dist.sample_iter(&mut thread_rng()).take(n).collect(),
+        }
+    }
+}
+
+impl Display for DistNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::Operation(op) => write!(f, "{op}"),
+            Self::Continuous(dist) => write!(f, "{dist}"),
+            Self::Discrete(dist) => write!(f, "{dist}"),
         }
     }
 }

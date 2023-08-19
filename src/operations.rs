@@ -12,23 +12,18 @@ impl Add for DistNode {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
         match (&self, &rhs) {
-            (DistNode::Continuous(d1), DistNode::Continuous(d2)) => match (d1, d2) {
-                (ContinuousDist::Normal { dist: d3 }, ContinuousDist::Normal { dist: d4 }) => {
-                    interface::Normal::from_mean(
-                        d3.mean().unwrap() + d4.mean().unwrap(),
-                        square(d3.std_dev().unwrap()) + square(d3.std_dev().unwrap()),
-                    )
-                }
-                (_, _) => DistNode::Operation(Ops::Add(Box::new(self), Box::new(rhs))),
-            },
-            (DistNode::Discrete(d1), DistNode::Discrete(d2)) => match (d1, d2) {
-                (DiscreteDist::Constant { dist: d3 }, DiscreteDist::Constant { dist: d4 }) => {
-                    interface::Constant::new(d3.number() + d4.number())
-                }
-
-                (_, _) => DistNode::Operation(Ops::Add(Box::new(self), Box::new(rhs))),
-            },
-            (_, _) => DistNode::Operation(Ops::Add(Box::new(self), Box::new(rhs))),
+            (
+                Self::Continuous(ContinuousDist::Normal { dist: d1 }),
+                Self::Continuous(ContinuousDist::Normal { dist: d2 }),
+            ) => interface::Normal::from_mean(
+                d1.mean().unwrap() + d2.mean().unwrap(),
+                square(d1.std_dev().unwrap()) + square(d2.std_dev().unwrap()),
+            ),
+            (
+                Self::Discrete(DiscreteDist::Constant { dist: d1 }),
+                Self::Discrete(DiscreteDist::Constant { dist: d2 }),
+            ) => interface::Constant::new(d1.number() + d2.number()),
+            (_, _) => Self::Operation(Ops::Add(Box::new(self), Box::new(rhs))),
         }
     }
 }
