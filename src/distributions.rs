@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use dist_derive::DistributionDerive;
 use ndarray::{Array, Dim};
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 use rand_distr::Distribution as Dst;
 use statrs::distribution::{LogNormal, Normal, Poisson, Triangular, Uniform};
 
@@ -52,7 +52,24 @@ impl Discrete {
 
 impl Dst<f64> for Discrete {
     fn sample<R: rand::Rng + ?Sized>(&self, _rng: &mut R) -> f64 {
-        todo!()
+        let cumulative_wights: Vec<f64> = self
+            .weights
+            .iter()
+            .scan(0.0, |acc, &x| {
+                *acc += x;
+                Some(*acc)
+            })
+            .collect();
+
+        let r = thread_rng().gen_range(0.0..1.0);
+
+        for (i, v) in self.values.iter().enumerate() {
+            if r < cumulative_wights[i] {
+                return v.to_owned();
+            }
+        }
+
+        return self.values.last().unwrap().to_owned();
     }
 }
 
@@ -67,10 +84,10 @@ pub enum ContinuousDist {
 impl Display for ContinuousDist {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::LogNormal { dist } => write!(f, "Log-Normal"),
-            Self::Normal { dist } => write!(f, "Normal"),
-            Self::Triangular { dist } => write!(f, "Triangular"),
-            Self::Uniform { dist } => write!(f, "Uniform"),
+            Self::LogNormal { dist: _ } => write!(f, "Log-Normal"),
+            Self::Normal { dist: _ } => write!(f, "Normal"),
+            Self::Triangular { dist: _ } => write!(f, "Triangular"),
+            Self::Uniform { dist: _ } => write!(f, "Uniform"),
         }
     }
 }
@@ -85,9 +102,9 @@ pub enum DiscreteDist {
 impl Display for DiscreteDist {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Constant { dist } => write!(f, "Constant"),
-            Self::Poisson { dist } => write!(f, "Poisson"),
-            Self::Discrete { dist } => write!(f, "Discrete"),
+            Self::Constant { dist: _ } => write!(f, "Constant"),
+            Self::Poisson { dist: _ } => write!(f, "Poisson"),
+            Self::Discrete { dist: _ } => write!(f, "Discrete"),
         }
     }
 }
